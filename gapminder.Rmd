@@ -1,0 +1,153 @@
+---
+title: 'Practise: ggplot2, dplyr, t test, Linear Regression'
+output:
+  html_document:
+    df_print: paged
+---
+
+###### In this notebook we will investigate through a dataset named gapminder
+###### You need to install gapminder, ggplot2, dplyr
+###### First include the library gapminder and let's see the summary
+###### we see that it has columns like country, continent, year, life expentency, Total population and GDP/capita
+
+
+```{r}
+library(gapminder)
+data("gapminder")
+summary(gapminder)
+```
+###### After calling this attach fucntion, we dont need to mention dataset again and again, suppose, instead of gapminder$column we can use only column
+
+###### We will look the histogram of population, its looked messy
+###### we go for a log transformation. whats a log transformation, when to appy, we might discuss later
+###### we also look at the density of the graph it looks like a normal distribution
+
+```{r}
+attach(gapminder)
+hist(pop)
+hist(log(pop))
+d <- density(log(pop))
+plot(d)
+```
+
+###### Let's see boxplot for different continent life expectancy, WE see africa has the lowest life expectancy and Ocenia and Europe has the heighest
+###### But in europe we have lots of outliers/exceptions
+
+```{r}
+boxplot(lifeExp~ continent)
+```
+###### Lets see gdp vs life expectency scatter plot, Its looks not perfect
+###### Let go for log transformation, Its looks better?
+
+###### And we also see a positive relation between gdp and life expectancy, More money, more lifetime?
+
+```{r}
+plot(lifeExp ~ gdpPercap)
+plot(lifeExp ~ log(gdpPercap))
+```
+
+###### Let's see this numerically, correlation between lifeExp ~ log(gdpPercap))
+
+```{r}
+cor.test(lifeExp, log(gdpPercap))
+```
+
+###### We see that correlation is .80, thats a strong correlation. 
+###### We will go for T test, to see if that things significant, And after that a linear regression
+###### BUT, before that lets do some dplyr :) 
+###### dplyr used pipe %>% (shortcut, ctrl+shift+m) function, pipe will attach previous condition/functionality to the next line
+
+
+```{r}
+library(dplyr)
+gapminder %>%
+  select(country, lifeExp)%>%
+  # Select used for selection of only this columns e:g counry, lifeEXp
+  filter(country == "Ireland" | country == "Bangladesh") %>% 
+  # Then we filter out our country of interst
+  group_by(country) %>% 
+  # We group by them by country so that we can see the result countrywise
+  summarise(avg_life = (mean(lifeExp)))
+  #summarise function to seee the summary output
+
+```
+
+###### Now we will save this things to new dataframe for later investigation/visualization
+
+```{r}
+#library(dplyr)
+df1<- gapminder %>%
+  select(country, lifeExp)%>%
+  # Select used for selection of only this columns e:g counry, lifeEXp
+  filter(country == "Ireland" | country == "Bangladesh") %>% 
+  # Then we filter out our country of interst
+  group_by(country)
+
+```
+
+
+###### Lets go for a t test to see if the difference of the mean significant
+###### Our null hypothesis is there is no change, Alternative is there is a change for mean value of these two country
+
+```{r}
+t.test(data = df1, lifeExp~country)
+```
+###### Look at the p value, its too low
+###### If t is low(less than alpha which is .05), the null must go, There is no place for null hyp. here, so Alternative wins
+###### There is a difference between two countrys mean
+###### Look at the output again, we are 95 percent confident that the change is between 29.18 to 17.17
+
+
+
+
+#### Let's have some plotting
+
+```{r}
+library(ggplot2)
+```
+
+
+
+
+###### Lots of things here, 
+###### first ggplot, here data = gapminder, aesthetics, for x axis it is gdp/capita
+###### for y axis its lifeExpectancy
+###### Here col = year, that is design our plot with different color for different year
+###### shape = continent, that is different shape for different continent
+###### size = population, that larger bubbule/point for larger population
+###### alpha = 0.7, that is transparancy, chage it between 0 to 1 to see the difference
+###### geom_smooth, for a smooth line following the slope for different continent, method = lm, to make
+###### the line a straight line, remove method = lm, now see the line is not straight anymore
+###### and facet is used for separating a single graph to different graph
+###### that is, facet_wrap, continent, make 5 graph for different continet
+###### Remove facet part, now see all the graph joined together in a single graph
+
+
+```{r}
+ggplot(gapminder, aes(log(gdpPercap),lifeExp, col = year, shape=continent,  size = pop))+
+  geom_point(alpha= 0.7)+geom_smooth(method = lm)+facet_wrap(~continent)
+
+```
+
+###### Most wanted Linear regression
+###### We waited for it, as strong positive correlation, and change are significant
+
+```{r}
+lm(lifeExp~gdpPercap)
+```
+
+###### Linear regression, Y = mx +b (here, y = estimeted_output, m = slope, x = our input, b = coefficient/constant )
+###### here m = 7.649e-04,  and b = 5.396e+01
+
+```{r}
+summary(lm(lifeExp~gdpPercap))
+```
+###### here Multiple R-squared is 0.34, that is not a good model mayb
+###### It shows, our model can explain 34 percent of data only. 
+
+
+##### Lets go for a log trasformation
+```{r}
+summary(lm(lifeExp~log(gdpPercap)))
+```
+###### Looks better, right? R squared increased to 65 percent :) 
